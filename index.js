@@ -33,6 +33,7 @@ export class DbApi {
   #getBacklinkSql
   #writeBacklinkSql
   #updateForksSql
+  #docDefaults
 
   /**
    * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
@@ -40,10 +41,15 @@ export class DbApi {
    */
   constructor(db, { docTableName, backlinkTableName }) {
     assertValidSchema(db, { docTableName, backlinkTableName })
-    const docColumns = db
-      .prepare(`PRAGMA table_info(${docTableName})`)
-      .all()
-      .map(({ name }) => name)
+    const tableInfo = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+    this.#docDefaults = tableInfo.reduce(
+      (acc, { name, dflt_value, notnull }) => {
+        if (!notnull) acc[name] = dflt_value
+        return acc
+      },
+      {}
+    )
+    const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
       `SELECT *
       FROM ${docTableName}
@@ -68,7 +74,7 @@ export class DbApi {
   }
   /**
    * @param {string} id
-   * @returns {IndexedDocument | undefined}
+   * @returns {IndexedDocument & { [key: string]: any } | undefined}
    */
   getDoc(id) {
     const doc = this.#getDocSql.get(id)
@@ -82,6 +88,7 @@ export class DbApi {
    */
   writeDoc(doc) {
     const flattenedDoc = {
+      ...this.#docDefaults,
       ...doc,
       links: doc.links.length ? doc.links.join(',') : null,
       forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
