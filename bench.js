@@ -1,17 +1,7 @@
-import Realm from 'realm'
-import { BacklinkSchema, DocSchema } from './schema.js'
-import RealmIndexer from './index.js'
+import { create } from './test/utils.js'
 import { randomBytes } from 'crypto'
 
-const realm = await Realm.open({
-  inMemory: true,
-  schema: [BacklinkSchema, DocSchema],
-})
-
-const indexer = new RealmIndexer(realm, {
-  docType: 'Doc',
-  backlinkType: 'Backlink',
-})
+const { indexer, cleanup } = create()
 
 const batchSize = Number(process.argv[2] || 100)
 let times = Number(process.argv[3] || 1000)
@@ -39,4 +29,4 @@ while (count < times) {
 
 var elapsed = Date.now() - start
 console.log(`${elapsed}ms`)
-realm.close()
+cleanup()
