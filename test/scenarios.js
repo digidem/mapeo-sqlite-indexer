@@ -3,7 +3,7 @@ import Database from 'better-sqlite3'
 import test from 'tape'
 import tmp from 'tmp'
 import path from 'path'
-import SqliteIndexer from '../index.js'
+import SqliteIndexer, { DbApi } from '../index.js'
 
 const { name: tmpDir, removeCallback } = tmp.dirSync({ unsafeCleanup: true })
 
@@ -13,13 +13,14 @@ db.pragma('journal_mode = WAL')
 
 db.prepare(
   `CREATE TABLE IF NOT EXISTS docs
-  (id TEXT PRIMARY KEY, version TEXT, links TEXT, forks TEXT)`
+  (id TEXT PRIMARY KEY NOT NULL, version TEXT NOT NULL, links TEXT, forks TEXT)
+  WITHOUT ROWID`
 ).run()
 
-// console.log(db.prepare('PRAGMA table_info(docs)').all())
-
 db.prepare(
-  `CREATE TABLE IF NOT EXISTS backlinks (version TEXT PRIMARY KEY)`
+  `CREATE TABLE IF NOT EXISTS backlinks
+  (version TEXT PRIMARY KEY NOT NULL)
+  WITHOUT ROWID`
 ).run()
 
 const docs = [
@@ -69,6 +70,10 @@ test('Expected head for all permutations of order', async (t) => {
     docTableName: 'docs',
     backlinkTableName: 'backlinks',
   })
+  const api = new DbApi(db, {
+    docTableName: 'docs',
+    backlinkTableName: 'backlinks',
+  })
 
   for (const scenario of scenarios) {
     const { docs, expected } = scenario
@@ -76,11 +81,9 @@ test('Expected head for all permutations of order', async (t) => {
     // for (const permutation of [[docs[0], docs[3], docs[1], docs[2]]]) {
     for (const permutation of permute(docs)) {
       indexer.batch(permutation)
-      const head = db
-        .prepare('SELECT * FROM docs WHERE id = ?')
-        .get(expected.id)
+      const head = api.getDoc(expected.id)
       t.deepEqual(
-        parseDoc(head),
+        { ...head, forks: head?.forks.sort() },
         expected,
         JSON.stringify(permutation.map((doc) => doc.version))
       )
@@ -95,14 +98,6 @@ test('cleanup', (t) => {
   removeCallback()
   t.end()
 })
-
-function parseDoc(doc) {
-  return {
-    ...doc,
-    links: doc.links.split(',').sort(),
-    forks: doc.forks?.split(',').sort() || [],
-  }
-}
 
 /**
  * Returns an iterator of all permutations of the given array.

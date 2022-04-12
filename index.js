@@ -1,4 +1,5 @@
 // @ts-check
+import assert from 'assert'
 
 /**
  * @typedef {object} IndexableDocument
@@ -8,30 +9,52 @@
  * @property {string | number} [timestamp]
  */
 
-/** @typedef {IndexableDocument & { forks: Set<string> }} IndexedDocument */
+/** @typedef {{ type: string, pk: 1 | 0, cid: number, notnull: 1 | 0, dflt_value: any, name: string }} ColumnInfo */
+/** @typedef {Record<string, Partial<Omit<ColumnInfo, 'name'>>>} ColumnSchema */
+/** @typedef {IndexableDocument & { forks: string[] }} IndexedDocument */
 /** @typedef {{ version: string }} Backlink */
 
-class DbApi {
-  #db
+/** @type {ColumnSchema} */
+const docSchema = {
+  id: { type: 'TEXT', pk: 1, notnull: 1 },
+  version: { type: 'TEXT', notnull: 1, pk: 0 },
+  links: { type: 'TEXT', notnull: 0, dflt_value: null, pk: 0 },
+  forks: { type: 'TEXT', notnull: 0, dflt_value: null, pk: 0 },
+}
+
+/** @type {ColumnSchema} */
+const backlinkSchema = {
+  version: { type: 'TEXT', pk: 1, notnull: 1 },
+}
+
+export class DbApi {
   #getDocSql
   #writeDocSql
   #getBacklinkSql
   #writeBacklinkSql
+  #updateForksSql
 
   /**
    * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
    * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
    */
   constructor(db, { docTableName, backlinkTableName }) {
-    this.#db = db
+    assertValidSchema(db, { docTableName, backlinkTableName })
+    const docColumns = db
+      .prepare(`PRAGMA table_info(${docTableName})`)
+      .all()
+      .map(({ name }) => name)
     this.#getDocSql = db.prepare(
-      `SELECT id, version, links, forks
+      `SELECT *
       FROM ${docTableName}
       WHERE id = ?`
     )
     this.#writeDocSql = db.prepare(
-      `REPLACE INTO ${docTableName} (id, version, links, forks)
-      VALUES (@id, @version, @links, @forks)`
+      `REPLACE INTO ${docTableName} (${docColumns.join(',')})
+      VALUES (${docColumns.map((name) => `@${name}`).join(',')})`
+    )
+    this.#updateForksSql = db.prepare(
+      `UPDATE ${docTableName} SET forks = @forks WHERE id = @id`
     )
     this.#getBacklinkSql = db.prepare(
       `SELECT version
@@ -51,7 +74,7 @@ class DbApi {
     const doc = this.#getDocSql.get(id)
     if (!doc) return
     doc.links = doc.links ? doc.links.split(',') : []
-    doc.forks = doc.forks ? new Set(doc.forks.split(',')) : new Set()
+    doc.forks = doc.forks ? doc.forks.split(',') : []
     return doc
   }
   /**
@@ -61,9 +84,19 @@ class DbApi {
     const flattenedDoc = {
       ...doc,
       links: doc.links.length ? doc.links.join(',') : null,
-      forks: 'forks' in doc && doc.forks.size ? [...doc.forks].join(',') : null,
+      forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
     }
     this.#writeDocSql.run(flattenedDoc)
+  }
+  /**
+   * @param {string} docId
+   * @param {IndexedDocument["forks"]} forks
+   */
+  updateForks(docId, forks) {
+    this.#updateForksSql.run({
+      id: docId,
+      forks: forks && forks.length ? forks.join(',') : null,
+    })
   }
   /**
    * @param {string} version
@@ -104,18 +137,22 @@ export default class SqliteIndexer {
       const existing = this.dbApi.getDoc(doc.id)
       // console.log('existing', existing)
       // console.log('doc', doc)
+      let forksDirty = false
 
       for (const link of doc.links) {
         this.dbApi.writeBacklink(link)
-        if (existing && existing.forks.has(link)) {
-          existing.forks.delete(link)
+        if (existing && existing.forks.includes(link)) {
+          forksDirty = true
+          existing.forks = existing.forks.filter((fork) => fork !== link)
         }
       }
 
       // If the doc is linked to by another doc, then it's not a head, so we can ignore it
       if (this.isLinked(doc.version)) {
-        if (existing) this.dbApi.writeDoc(existing)
-        // console.log('linked', doc.version)
+        if (existing && forksDirty) {
+          // console.log('updating forks', doc.id, existing.forks)
+          this.dbApi.updateForks(doc.id, existing.forks)
+        }
         continue
       }
 
@@ -133,13 +170,11 @@ export default class SqliteIndexer {
         // TODO: Can the forks Set get out of date over time? E.g. could some of
         // the forks end up being linked by a doc that is indexed later on?
         if (winner === existing) {
-          existing.forks.add(doc.version)
-          this.dbApi.writeDoc(existing)
+          existing.forks.push(doc.version)
+          this.dbApi.updateForks(existing.id, existing.forks)
         } else {
-          // Need to clone the forks set, before it is deleted
-          const forks = new Set(existing.forks)
-          forks.add(existing.version)
-          this.dbApi.writeDoc({ ...doc, forks })
+          existing.forks.push(existing.version)
+          this.dbApi.writeDoc({ ...doc, forks: existing.forks })
         }
       }
     }
@@ -168,4 +203,50 @@ function defaultGetWinner(docA, docB) {
   }
   // They are equal or no timestamp property, so sort by version to ensure winner is deterministic
   return docA.version > docB.version ? docA : docB
+}
+
+/**
+ * Assert that the given sqlite database has tables with the correct schema for
+ * indexing Mapeo data
+ *
+ * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
+ * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
+ */
+function assertValidSchema(db, { docTableName, backlinkTableName }) {
+  const docsTable = db.prepare(`PRAGMA table_list(${docTableName})`).get()
+  assert(docsTable, `Table ${docTableName} does not exist`)
+  /** @type {ColumnInfo[]} */
+  const docsColumns = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+  assertMatchingSchema(docTableName, docsColumns, docSchema)
+  const backlinksTable = db
+    .prepare(`PRAGMA table_list(${backlinkTableName})`)
+    .get()
+  assert(backlinksTable, `Table ${backlinkTableName} does not exist`)
+  assert(
+    backlinksTable.ncol === 1,
+    `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
+  )
+  /** @type {ColumnInfo[]} */
+  const backlinksColumns = db.prepare('PRAGMA table_info(backlinks)').all()
+  assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
+}
+
+/**
+ * @param {string} tableName
+ * @param {ColumnInfo[]} columns
+ * @param {ColumnSchema} schema
+ */
+function assertMatchingSchema(tableName, columns, schema) {
+  for (const [name, info] of Object.entries(schema)) {
+    const column = columns.find((c) => c.name === name)
+    assert(column, `Table '${tableName}' must have a column '${name}'`)
+    for (const [prop, value] of Object.entries(info)) {
+      assert(
+        // @ts-ignore
+        column[prop] === value,
+        // @ts-ignore
+        `Column '${name}' in table '${tableName}' should have ${prop}=${value}, but instead ${prop}=${column[prop]}`
+      )
+    }
+  }
 }
