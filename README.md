@@ -111,7 +111,7 @@ const A = db.prepare('SELECT * FROM docs WHERE id = A').run()
 
 ### const indexer = new SQLiteIndexer(db, opts)
 
-### realm
+### db
 
 _Required_\
 Type: `BetterSqlite3.Database`
