@@ -135,10 +135,12 @@ export default class SqliteIndexer {
   ) {
     this.dbApi = new DbApi(db, { docTableName, backlinkTableName })
     this.#getWinner = getWinner
+    /** @type {(docs: IndexableDocument[]) => void} */
+    this.batch = db.transaction((docs) => this._batch(docs))
   }
 
   /** @param {IndexableDocument[]} docs */
-  batch(docs) {
+  _batch(docs) {
     for (const doc of docs) {
       /** @type {IndexedDocument | undefined} */
       const existing = this.dbApi.getDoc(doc.id)
