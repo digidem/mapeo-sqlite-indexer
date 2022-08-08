@@ -97,10 +97,19 @@ export class DbApi {
     this.#writeDocSql.run(flattenedDoc)
     const id = `${flattenedDoc.id}/${flattenedDoc.seq}`
     if (this.#listeners.has(id)) {
-      this.#listeners.get(id)(doc)
-      this.#listeners.delete(id)
+      process.nextTick(() => {
+        const listener = this.#listeners.get(id)
+        listener(flattenedDoc)
+        this.#listeners.delete(id)
+      })
     }
   }
+  /**
+   * @param {object} options
+   * @param {string} options.id
+   * @param {number} options.seq
+   * @param {OnceWriteDoc} listener
+   */
   onceWriteDoc({ id, seq }, listener) {
     this.#listeners.set(`${id}/${seq}`, listener)
   }
@@ -204,8 +213,19 @@ export default class SqliteIndexer {
     return !!this.dbApi.getBacklink(version)
   }
 
-  onceWriteDoc(docId, listener) {
-    this.dbApi.onceWriteDoc(docId, listener)
+  /**
+   * @callback OnceWriteDoc
+   * @param {IndexedDocument} doc
+   */
+
+  /**
+   * @param {object} options
+   * @param {string} options.id
+   * @param {number} options.seq
+   * @param {OnceWriteDoc} listener
+   */
+  onceWriteDoc(options, listener) {
+    this.dbApi.onceWriteDoc(options, listener)
   }
 }
 

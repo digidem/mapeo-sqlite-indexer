@@ -15,8 +15,10 @@ const docs = [
 
 test('onceWriteDoc called for each doc', async (t) => {
   t.plan(8)
+  /**
+   * @param {import('../index.js').IndexedDocument} doc
+   */
   function onWriteDoc(doc) {
-    console.log('doc', doc)
     t.ok(doc)
   }
 
