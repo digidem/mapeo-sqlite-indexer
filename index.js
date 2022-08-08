@@ -95,23 +95,21 @@ export class DbApi {
       forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
     }
     this.#writeDocSql.run(flattenedDoc)
-    const id = `${flattenedDoc.id}/${flattenedDoc.seq}`
-    if (this.#listeners.has(id)) {
+
+    if (this.#listeners.has(doc.version)) {
       process.nextTick(() => {
-        const listener = this.#listeners.get(id)
+        const listener = this.#listeners.get(doc.version)
         listener(flattenedDoc)
-        this.#listeners.delete(id)
+        this.#listeners.delete(doc.version)
       })
     }
   }
   /**
-   * @param {object} options
-   * @param {string} options.id
-   * @param {number} options.seq
+   * @param {string} version
    * @param {OnceWriteDoc} listener
    */
-  onceWriteDoc({ id, seq }, listener) {
-    this.#listeners.set(`${id}/${seq}`, listener)
+  onceWriteDoc(version, listener) {
+    this.#listeners.set(version, listener)
   }
   /**
    * @param {string} docId
@@ -219,13 +217,11 @@ export default class SqliteIndexer {
    */
 
   /**
-   * @param {object} options
-   * @param {string} options.id
-   * @param {number} options.seq
+   * @param {string} version
    * @param {OnceWriteDoc} listener
    */
-  onceWriteDoc(options, listener) {
-    this.dbApi.onceWriteDoc(options, listener)
+  onceWriteDoc(version, listener) {
+    this.dbApi.onceWriteDoc(version, listener)
   }
 }
 
@@ -270,7 +266,9 @@ function assertValidSchema(db, { docTableName, backlinkTableName }) {
     `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
   )
   /** @type {ColumnInfo[]} */
-  const backlinksColumns = db.prepare('PRAGMA table_info(backlinks)').all()
+  const backlinksColumns = db
+    .prepare(`PRAGMA table_info(${backlinkTableName})`)
+    .all()
   assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
 }
 

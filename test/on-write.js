@@ -24,7 +24,7 @@ test('onceWriteDoc called for each doc', async (t) => {
 
   const { indexer, cleanup, clear } = create()
   for (const doc of docs) {
-    indexer.onceWriteDoc({ id: doc.id, seq: doc.seq }, onWriteDoc)
+    indexer.onceWriteDoc(doc.version, onWriteDoc)
   }
   indexer.batch(docs)
   clear()
