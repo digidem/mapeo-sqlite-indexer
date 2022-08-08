@@ -130,7 +130,7 @@ export default class SqliteIndexer {
    * @param {string} options.docTableName - Name of the Realm object type that will store the indexed document
    * @param {string} options.backlinkTableName - Name of the Realm object type that will store the backlinks
    * @param {typeof defaultGetWinner} [options.getWinner] - Function that will be used to determine the "winning" fork of a document
-   * @param {typeof defaultOnWriteDoc} [options.onWriteDoc] - Function that will be called when a document is written to the database
+   * @param {Function} [options.onWriteDoc] - Function that will be called when a document is written to the database
    */
   constructor(
     db,
