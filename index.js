@@ -39,8 +39,9 @@ export class DbApi {
    * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
    * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
    */
-  constructor(db, { docTableName, backlinkTableName }) {
+  constructor(db, { docTableName, backlinkTableName, onWriteDoc = () => {} }) {
     assertValidSchema(db, { docTableName, backlinkTableName })
+    this.onWriteDoc = onWriteDoc
     const tableInfo = db.prepare(`PRAGMA table_info(${docTableName})`).all()
     this.#docDefaults = tableInfo.reduce(
       (acc, { name, dflt_value, notnull }) => {
@@ -94,6 +95,7 @@ export class DbApi {
       forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
     }
     this.#writeDocSql.run(flattenedDoc)
+    this.onWriteDoc(flattenedDoc)
   }
   /**
    * @param {string} docId
@@ -128,12 +130,18 @@ export default class SqliteIndexer {
    * @param {string} options.docTableName - Name of the Realm object type that will store the indexed document
    * @param {string} options.backlinkTableName - Name of the Realm object type that will store the backlinks
    * @param {typeof defaultGetWinner} [options.getWinner] - Function that will be used to determine the "winning" fork of a document
+   * @param {typeof defaultOnWriteDoc} [options.onWriteDoc] - Function that will be called when a document is written to the database
    */
   constructor(
     db,
-    { docTableName, backlinkTableName, getWinner = defaultGetWinner }
+    {
+      docTableName,
+      backlinkTableName,
+      getWinner = defaultGetWinner,
+      onWriteDoc = () => {},
+    }
   ) {
-    this.dbApi = new DbApi(db, { docTableName, backlinkTableName })
+    this.dbApi = new DbApi(db, { docTableName, backlinkTableName, onWriteDoc })
     this.#getWinner = getWinner
     /** @type {(docs: IndexableDocument[]) => void} */
     this.batch = db.transaction((docs) => this._batch(docs))
