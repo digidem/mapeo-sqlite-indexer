@@ -236,7 +236,7 @@ function assertValidSchema(db, { docTableName, backlinkTableName }) {
     `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
   )
   /** @type {ColumnInfo[]} */
-  const backlinksColumns = db.prepare('PRAGMA table_info(backlinks)').all()
+  const backlinksColumns = db.prepare(`PRAGMA table_info(${backlinkTableName})`).all()
   assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
 }
 
