@@ -3,23 +3,27 @@ import test from 'tape'
 import { create } from './utils.js'
 
 const docs = [
-  { id: 'A', version: '1', links: [] },
-  { id: 'A', version: '2', links: ['1'] },
-  { id: 'A', version: '3', links: ['1'] },
-  { id: 'A', version: '4', links: ['2', '3'] },
-  { id: 'A', version: '5', links: ['4'] },
-  { id: 'A', version: '6', links: ['4'] },
-  { id: 'A', version: '7', links: ['4'] },
-  { id: 'A', version: '8', links: ['5', '6'] },
+  { id: 'A', seq: 1, version: '1', links: [] },
+  { id: 'A', seq: 2, version: '2', links: ['1'] },
+  { id: 'A', seq: 3, version: '3', links: ['1'] },
+  { id: 'A', seq: 4, version: '4', links: ['2', '3'] },
+  { id: 'A', seq: 5, version: '5', links: ['4'] },
+  { id: 'A', seq: 6, version: '6', links: ['4'] },
+  { id: 'A', seq: 7, version: '7', links: ['4'] },
+  { id: 'A', seq: 8, version: '8', links: ['5', '6'] },
 ]
 
-test('onWriteDoc called for each doc', async (t) => {
+test('onceWriteDoc called for each doc', async (t) => {
   t.plan(8)
   function onWriteDoc(doc) {
+    console.log('doc', doc)
     t.ok(doc)
   }
 
-  const { indexer, cleanup, clear } = create({ onWriteDoc })
+  const { indexer, cleanup, clear } = create()
+  for (const doc of docs) {
+    indexer.onceWriteDoc({ id: doc.id, seq: doc.seq }, onWriteDoc)
+  }
   indexer.batch(docs)
   clear()
   cleanup()

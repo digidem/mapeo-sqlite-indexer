@@ -3,7 +3,7 @@ import tmp from 'tmp'
 import path from 'path'
 import SqliteIndexer, { DbApi } from '../index.js'
 
-export function create({ extraColumns = '', onWriteDoc } = {}) {
+export function create({ extraColumns = '' } = {}) {
   const { name: tmpDir, removeCallback } = tmp.dirSync({ unsafeCleanup: true })
 
   const db = new Database(path.join(tmpDir, 'db.sqlite'))
@@ -31,7 +31,6 @@ export function create({ extraColumns = '', onWriteDoc } = {}) {
   const indexer = new SqliteIndexer(db, {
     docTableName: 'docs',
     backlinkTableName: 'backlinks',
-    onWriteDoc,
   })
   const api = new DbApi(db, {
     docTableName: 'docs',

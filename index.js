@@ -34,14 +34,14 @@ export class DbApi {
   #writeBacklinkSql
   #updateForksSql
   #docDefaults
+  #listeners = new Map()
 
   /**
    * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
    * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
    */
-  constructor(db, { docTableName, backlinkTableName, onWriteDoc = () => {} }) {
+  constructor(db, { docTableName, backlinkTableName }) {
     assertValidSchema(db, { docTableName, backlinkTableName })
-    this.onWriteDoc = onWriteDoc
     const tableInfo = db.prepare(`PRAGMA table_info(${docTableName})`).all()
     this.#docDefaults = tableInfo.reduce(
       (acc, { name, dflt_value, notnull }) => {
@@ -95,7 +95,14 @@ export class DbApi {
       forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
     }
     this.#writeDocSql.run(flattenedDoc)
-    this.onWriteDoc(flattenedDoc)
+    const id = `${flattenedDoc.id}/${flattenedDoc.seq}`
+    if (this.#listeners.has(id)) {
+      this.#listeners.get(id)(doc)
+      this.#listeners.delete(id)
+    }
+  }
+  onceWriteDoc({ id, seq }, listener) {
+    this.#listeners.set(`${id}/${seq}`, listener)
   }
   /**
    * @param {string} docId
@@ -123,6 +130,7 @@ export class DbApi {
 
 export default class SqliteIndexer {
   #getWinner
+  #listeners = new Map()
 
   /**
    * @param {import('better-sqlite3').Database} db
@@ -130,18 +138,12 @@ export default class SqliteIndexer {
    * @param {string} options.docTableName - Name of the Realm object type that will store the indexed document
    * @param {string} options.backlinkTableName - Name of the Realm object type that will store the backlinks
    * @param {typeof defaultGetWinner} [options.getWinner] - Function that will be used to determine the "winning" fork of a document
-   * @param {Function} [options.onWriteDoc] - Function that will be called when a document is written to the database
    */
   constructor(
     db,
-    {
-      docTableName,
-      backlinkTableName,
-      getWinner = defaultGetWinner,
-      onWriteDoc = () => {},
-    }
+    { docTableName, backlinkTableName, getWinner = defaultGetWinner }
   ) {
-    this.dbApi = new DbApi(db, { docTableName, backlinkTableName, onWriteDoc })
+    this.dbApi = new DbApi(db, { docTableName, backlinkTableName })
     this.#getWinner = getWinner
     /** @type {(docs: IndexableDocument[]) => void} */
     this.batch = db.transaction((docs) => this._batch(docs))
@@ -200,6 +202,10 @@ export default class SqliteIndexer {
   /** @param {string} version */
   isLinked(version) {
     return !!this.dbApi.getBacklink(version)
+  }
+
+  onceWriteDoc(docId, listener) {
+    this.dbApi.onceWriteDoc(docId, listener)
   }
 }
 
