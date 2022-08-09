@@ -101,10 +101,12 @@ export class DbApi {
     if (this.#listeners.has(doc.version)) {
       process.nextTick(() => {
         const set = this.#listeners.get(doc.version)
-        for (const listener of set.values()) {
-          listener(doc)
+        if (set) {
+          for (const listener of set.values()) {
+            listener(doc)
+          }
+          this.#listeners.delete(doc.version)
         }
-        this.#listeners.delete(doc.version)
       })
     }
   }
@@ -118,11 +120,12 @@ export class DbApi {
     }
 
     const set = this.#listeners.get(version)
-    if (set.has(listener)) {
+    if (set && set.has(listener)) {
       return
+    } else if (set) {
+      set.add(listener)
+      this.#listeners.set(version, set)
     }
-    set.add(listener)
-    this.#listeners.set(version, set)
   }
   /**
    * @param {string} docId
@@ -226,7 +229,7 @@ export default class SqliteIndexer {
 
   /**
    * @callback IndexCallback
-   * @param {IndexedDocument} doc
+   * @param {IndexedDocument | IndexableDocument} doc
    */
 
   /**
