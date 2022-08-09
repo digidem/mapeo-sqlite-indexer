@@ -30,3 +30,46 @@ test('onceWriteDoc called for each doc', async (t) => {
   clear()
   cleanup()
 })
+
+test('multiple listeners on the same version', async (t) => {
+  t.plan(3)
+
+  const { indexer, cleanup, clear } = create()
+
+  indexer.onceWriteDoc('1', function (doc) {
+    t.ok(doc)
+  })
+
+  indexer.onceWriteDoc('1', function (doc) {
+    t.ok(doc)
+  })
+
+  indexer.onceWriteDoc('1', function (doc) {
+    t.ok(doc)
+  })
+
+  indexer.batch(docs)
+  clear()
+  cleanup()
+})
+
+test('same listener used multiple times only called once', async (t) => {
+  t.plan(1)
+
+  const { indexer, cleanup, clear } = create()
+
+  /**
+   * @param {import('../index.js').IndexedDocument} doc
+   */
+  function onWriteDoc(doc) {
+    t.ok(doc)
+  }
+
+  indexer.onceWriteDoc('1', onWriteDoc)
+  indexer.onceWriteDoc('1', onWriteDoc)
+  indexer.onceWriteDoc('1', onWriteDoc)
+
+  indexer.batch(docs)
+  clear()
+  cleanup()
+})

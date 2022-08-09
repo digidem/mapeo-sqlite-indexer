@@ -34,6 +34,9 @@ export class DbApi {
   #writeBacklinkSql
   #updateForksSql
   #docDefaults
+  /**
+   *
+   */
   #listeners = new Map()
 
   /**
@@ -98,18 +101,29 @@ export class DbApi {
 
     if (this.#listeners.has(doc.version)) {
       process.nextTick(() => {
-        const listener = this.#listeners.get(doc.version)
-        listener(flattenedDoc)
+        const set = this.#listeners.get(doc.version)
+        for (const listener of set.values()) {
+          listener(doc)
+        }
         this.#listeners.delete(doc.version)
       })
     }
   }
   /**
    * @param {string} version
-   * @param {OnceWriteDoc} listener
+   * @param {IndexCallback} listener
    */
   onceWriteDoc(version, listener) {
-    this.#listeners.set(version, listener)
+    if (!this.#listeners.has(version)) {
+      this.#listeners.set(version, new Set())
+    }
+
+    const set = this.#listeners.get(version)
+    if (set.has(listener)) {
+      return
+    }
+    set.add(listener)
+    this.#listeners.set(version, set)
   }
   /**
    * @param {string} docId
@@ -212,13 +226,13 @@ export default class SqliteIndexer {
   }
 
   /**
-   * @callback OnceWriteDoc
+   * @callback IndexCallback
    * @param {IndexedDocument} doc
    */
 
   /**
    * @param {string} version
-   * @param {OnceWriteDoc} listener
+   * @param {IndexCallback} listener
    */
   onceWriteDoc(version, listener) {
     this.dbApi.onceWriteDoc(version, listener)
