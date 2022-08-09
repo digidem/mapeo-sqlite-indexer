@@ -34,9 +34,8 @@ export class DbApi {
   #writeBacklinkSql
   #updateForksSql
   #docDefaults
-  /**
-   *
-   */
+
+  /** @type {Map<string, Set<IndexCallback>>} */
   #listeners = new Map()
 
   /**
