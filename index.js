@@ -154,7 +154,6 @@ export class DbApi {
 
 export default class SqliteIndexer {
   #getWinner
-  #listeners = new Map()
 
   /**
    * @param {import('better-sqlite3').Database} db
