@@ -98,14 +98,15 @@ export class DbApi {
     }
     this.#writeDocSql.run(flattenedDoc)
 
-    if (this.#listeners.has(doc.version)) {
+    const { version } = doc
+    if (this.#listeners.has(version)) {
       process.nextTick(() => {
-        const set = this.#listeners.get(doc.version)
+        const set = this.#listeners.get(version)
         if (set) {
           for (const listener of set.values()) {
             listener(doc)
           }
-          this.#listeners.delete(doc.version)
+          this.#listeners.delete(version)
         }
       })
     }
