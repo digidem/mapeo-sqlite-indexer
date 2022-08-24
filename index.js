@@ -35,6 +35,9 @@ export class DbApi {
   #updateForksSql
   #docDefaults
 
+  /** @type {Map<string, Set<IndexCallback>>} */
+  #listeners = new Map()
+
   /**
    * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
    * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
@@ -94,6 +97,36 @@ export class DbApi {
       forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
     }
     this.#writeDocSql.run(flattenedDoc)
+
+    const { version } = doc
+    if (this.#listeners.has(version)) {
+      process.nextTick(() => {
+        const set = this.#listeners.get(version)
+        if (set) {
+          for (const listener of set.values()) {
+            listener(doc)
+          }
+          this.#listeners.delete(version)
+        }
+      })
+    }
+  }
+  /**
+   * @param {string} version
+   * @param {IndexCallback} listener
+   */
+  onceWriteDoc(version, listener) {
+    if (!this.#listeners.has(version)) {
+      this.#listeners.set(version, new Set())
+    }
+
+    const set = this.#listeners.get(version)
+    if (set && set.has(listener)) {
+      return
+    } else if (set) {
+      set.add(listener)
+      this.#listeners.set(version, set)
+    }
   }
   /**
    * @param {string} docId
@@ -193,6 +226,19 @@ export default class SqliteIndexer {
   isLinked(version) {
     return !!this.dbApi.getBacklink(version)
   }
+
+  /**
+   * @callback IndexCallback
+   * @param {IndexedDocument | IndexableDocument} doc
+   */
+
+  /**
+   * @param {string} version
+   * @param {IndexCallback} listener
+   */
+  onceWriteDoc(version, listener) {
+    this.dbApi.onceWriteDoc(version, listener)
+  }
 }
 
 /**
@@ -236,7 +282,9 @@ function assertValidSchema(db, { docTableName, backlinkTableName }) {
     `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
   )
   /** @type {ColumnInfo[]} */
-  const backlinksColumns = db.prepare(`PRAGMA table_info(${backlinkTableName})`).all()
+  const backlinksColumns = db
+    .prepare(`PRAGMA table_info(${backlinkTableName})`)
+    .all()
   assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
 }
 

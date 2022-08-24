@@ -141,6 +141,10 @@ The name of the table for storing backlinks (used internally for indexing).
 
 Index an array of documents. Documents can be in any order. Documents must have an `id` property, a `version` property that is unique, and a `links` property which is an array of version ids for the documents parent(s).
 
+### indexer.onceWriteDoc(version, listener)
+
+Set a listener for a doc at a specific version. Useful for performing an action based on completion of indexing of a document.
+
 ### docs
 
 _Requires_\
