@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.2](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2022-11-01)
+
+### ⚠ BREAKING CHANGES
+
+- previously forks and links were stored as comma-
+  separated strings in nullable columns. This changes them to be non-
+  nullable JSON values, which must be an array of strings. Previous index
+  tables will break with this version.
+
+- store forks and links as JSON ([945a8ed](https://github.com/digidem/mapeo-sqlite-indexer/commit/945a8edea0d52de41427e4e73c4f937847ec2fef))
+
 ## 1.0.0-alpha.1 (2022-11-01)
 
 ### Features
