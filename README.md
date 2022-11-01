@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS docs
   (
     id TEXT PRIMARY KEY NOT NULL,
     version TEXT NOT NULL,
-    links TEXT,
-    forks TEXT
+    links TEXT NOT NULL,
+    forks TEXT NOT NULL
   )
 ```
 
@@ -76,8 +76,8 @@ db.prepare(
   (
     id TEXT PRIMARY KEY NOT NULL,
     version TEXT NOT NULL,
-    links TEXT,
-    forks TEXT
+    links TEXT NOT NULL,
+    forks TEXT NOT NULL
     ${extraColumns ? ', ' + extraColumns : ''}
   )
   WITHOUT ROWID`
