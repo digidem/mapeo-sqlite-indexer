@@ -18,8 +18,8 @@ import assert from 'assert'
 const docSchema = {
   id: { type: 'TEXT', pk: 1, notnull: 1 },
   version: { type: 'TEXT', notnull: 1, pk: 0 },
-  links: { type: 'TEXT', notnull: 0, dflt_value: null, pk: 0 },
-  forks: { type: 'TEXT', notnull: 0, dflt_value: null, pk: 0 },
+  links: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
+  forks: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
 }
 
 /** @type {ColumnSchema} */
@@ -82,8 +82,8 @@ export class DbApi {
   getDoc(id) {
     const doc = this.#getDocSql.get(id)
     if (!doc) return
-    doc.links = doc.links ? doc.links.split(',') : []
-    doc.forks = doc.forks ? doc.forks.split(',') : []
+    doc.links = JSON.parse(doc.links)
+    doc.forks = JSON.parse(doc.forks)
     return doc
   }
   /**
@@ -93,8 +93,8 @@ export class DbApi {
     const flattenedDoc = {
       ...this.#docDefaults,
       ...doc,
-      links: doc.links.length ? doc.links.join(',') : null,
-      forks: 'forks' in doc && doc.forks.length ? doc.forks.join(',') : null,
+      links: JSON.stringify(doc.links),
+      forks: JSON.stringify('forks' in doc ? doc.forks : []),
     }
     this.#writeDocSql.run(flattenedDoc)
 
@@ -135,7 +135,7 @@ export class DbApi {
   updateForks(docId, forks) {
     this.#updateForksSql.run({
       id: docId,
-      forks: forks && forks.length ? forks.join(',') : null,
+      forks: JSON.stringify(forks),
     })
   }
   /**
