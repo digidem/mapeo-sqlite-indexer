@@ -44,13 +44,15 @@ export class DbApi {
    */
   constructor(db, { docTableName, backlinkTableName }) {
     assertValidSchema(db, { docTableName, backlinkTableName })
-    const tableInfo = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+    const tableInfo = /** @type {ColumnInfo[]} */ (
+      db.prepare(`PRAGMA table_info(${docTableName})`).all()
+    )
     this.#docDefaults = tableInfo.reduce(
       (acc, { name, dflt_value, notnull }) => {
         if (!notnull) acc[name] = dflt_value
         return acc
       },
-      {}
+      /** @type {Record<string, any>} */ ({})
     )
     const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
@@ -80,7 +82,7 @@ export class DbApi {
    * @returns {IndexedDocument & { [key: string]: any } | undefined}
    */
   getDoc(id) {
-    const doc = this.#getDocSql.get(id)
+    const doc = /** @type {any} */ (this.#getDocSql.get(id))
     if (!doc) return
     doc.links = JSON.parse(doc.links)
     doc.forks = JSON.parse(doc.forks)
@@ -270,21 +272,21 @@ function defaultGetWinner(docA, docB) {
 function assertValidSchema(db, { docTableName, backlinkTableName }) {
   const docsTable = db.prepare(`PRAGMA table_list(${docTableName})`).get()
   assert(docsTable, `Table ${docTableName} does not exist`)
-  /** @type {ColumnInfo[]} */
-  const docsColumns = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+  const docsColumns = /** @type {ColumnInfo[]} */ (
+    db.prepare(`PRAGMA table_info(${docTableName})`).all()
+  )
   assertMatchingSchema(docTableName, docsColumns, docSchema)
-  const backlinksTable = db
-    .prepare(`PRAGMA table_list(${backlinkTableName})`)
-    .get()
+  const backlinksTable = /** @type {{ ncol: number } | undefined }} */ (
+    db.prepare(`PRAGMA table_list(${backlinkTableName})`).get()
+  )
   assert(backlinksTable, `Table ${backlinkTableName} does not exist`)
   assert(
     backlinksTable.ncol === 1,
     `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
   )
-  /** @type {ColumnInfo[]} */
-  const backlinksColumns = db
-    .prepare(`PRAGMA table_info(${backlinkTableName})`)
-    .all()
+  const backlinksColumns = /** @type {ColumnInfo[]} */ (
+    db.prepare(`PRAGMA table_info(${backlinkTableName})`).all()
+  )
   assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
 }
 
