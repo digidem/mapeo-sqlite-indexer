@@ -3,14 +3,16 @@
   "version": "1.0.0-alpha.2",
   "description": "Index Mapeo data in a SQLite database",
   "main": "index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "run-p lint type tape",
     "lint": "eslint .",
     "tape": "c8 --100 tape 'test/**/*.js'",
     "posttest": "c8 report --reporter=text-lcov > ./coverage/lcov.info",
-    "type": "tsc --noEmit",
-    "prepare": "husky install"
+    "type": "tsc",
+    "prepare": "husky install",
+    "prepack": "npm run type"
   },
   "keywords": [],
   "author": "Digital Democracy",
