@@ -11,8 +11,15 @@ import assert from 'assert'
 
 /** @typedef {{ type: string, pk: 1 | 0, cid: number, notnull: 1 | 0, dflt_value: any, name: string }} ColumnInfo */
 /** @typedef {Record<string, Partial<Omit<ColumnInfo, 'name'>>>} ColumnSchema */
-/** @typedef {IndexableDocument & { forks: string[] }} IndexedDocument */
+/**
+ * @template {IndexableDocument} [TDoc=IndexableDocument]
+ * @typedef {TDoc & { forks: string[] }} IndexedDocument
+ */
 /** @typedef {{ version: string }} Backlink */
+/**
+ * @template {IndexableDocument} TDoc
+ * @typedef {(doc: IndexedDocument<TDoc>) => void} IndexCallback
+ */
 
 /** @type {ColumnSchema} */
 const docSchema = {
@@ -27,6 +34,9 @@ const backlinkSchema = {
   version: { type: 'TEXT', pk: 1, notnull: 1 },
 }
 
+/**
+ * @template {IndexableDocument} TDoc
+ */
 export class DbApi {
   #getDocSql
   #writeDocSql
@@ -35,22 +45,26 @@ export class DbApi {
   #updateForksSql
   #docDefaults
 
-  /** @type {Map<string, Set<IndexCallback>>} */
+  /** @type {Map<string, Set<IndexCallback<TDoc>>>} */
   #listeners = new Map()
 
   /**
-   * @param {ConstructorParameters<typeof SqliteIndexer>[0]} db
-   * @param {Omit<ConstructorParameters<typeof SqliteIndexer>[1], "getWinner">} options
+   * @param {import('better-sqlite3').Database} db
+   * @param {object} options
+   * @param {string} options.docTableName - Name of the Sqlite table that stores the indexed documents
+   * @param {string} options.backlinkTableName - Name of the Sqlite table that stores the backlinks
    */
   constructor(db, { docTableName, backlinkTableName }) {
     assertValidSchema(db, { docTableName, backlinkTableName })
-    const tableInfo = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+    const tableInfo = /** @type {ColumnInfo[]} */ (
+      db.prepare(`PRAGMA table_info(${docTableName})`).all()
+    )
     this.#docDefaults = tableInfo.reduce(
       (acc, { name, dflt_value, notnull }) => {
         if (!notnull) acc[name] = dflt_value
         return acc
       },
-      {}
+      /** @type {Record<string, any>} */ ({})
     )
     const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
@@ -77,24 +91,24 @@ export class DbApi {
   }
   /**
    * @param {string} id
-   * @returns {IndexedDocument & { [key: string]: any } | undefined}
+   * @returns {IndexedDocument<TDoc> | undefined}
    */
   getDoc(id) {
-    const doc = this.#getDocSql.get(id)
+    const doc = /** @type {any} */ (this.#getDocSql.get(id))
     if (!doc) return
     doc.links = JSON.parse(doc.links)
     doc.forks = JSON.parse(doc.forks)
     return doc
   }
   /**
-   * @param {IndexedDocument | IndexableDocument} doc
+   * @param {IndexedDocument<TDoc>} doc
    */
   writeDoc(doc) {
     const flattenedDoc = {
       ...this.#docDefaults,
       ...doc,
       links: JSON.stringify(doc.links),
-      forks: JSON.stringify('forks' in doc ? doc.forks : []),
+      forks: JSON.stringify(doc.forks),
     }
     this.#writeDocSql.run(flattenedDoc)
 
@@ -113,7 +127,7 @@ export class DbApi {
   }
   /**
    * @param {string} version
-   * @param {IndexCallback} listener
+   * @param {IndexCallback<TDoc>} listener
    */
   onceWriteDoc(version, listener) {
     if (!this.#listeners.has(version)) {
@@ -130,7 +144,7 @@ export class DbApi {
   }
   /**
    * @param {string} docId
-   * @param {IndexedDocument["forks"]} forks
+   * @param {IndexedDocument<IndexableDocument>["forks"]} forks
    */
   updateForks(docId, forks) {
     this.#updateForksSql.run({
@@ -152,37 +166,43 @@ export class DbApi {
   }
 }
 
+/**
+ * @template {IndexableDocument} [TDoc=IndexableDocument]
+ */
 export default class SqliteIndexer {
   #getWinner
+  #dbApi
 
   /**
    * @param {import('better-sqlite3').Database} db
    * @param {object} options
-   * @param {string} options.docTableName - Name of the Realm object type that will store the indexed document
-   * @param {string} options.backlinkTableName - Name of the Realm object type that will store the backlinks
+   * @param {string} options.docTableName - Name of the Sqlite table that stores the indexed documents
+   * @param {string} options.backlinkTableName - Name of the Sqlite table that stores the backlinks
    * @param {typeof defaultGetWinner} [options.getWinner] - Function that will be used to determine the "winning" fork of a document
    */
   constructor(
     db,
     { docTableName, backlinkTableName, getWinner = defaultGetWinner }
   ) {
-    this.dbApi = new DbApi(db, { docTableName, backlinkTableName })
+    this.#dbApi = /** @type {DbApi<TDoc>} */ (
+      new DbApi(db, { docTableName, backlinkTableName })
+    )
     this.#getWinner = getWinner
     /** @type {(docs: IndexableDocument[]) => void} */
-    this.batch = db.transaction((docs) => this._batch(docs))
+    this.batch = db.transaction((docs) => this.#batch(docs))
   }
 
-  /** @param {IndexableDocument[]} docs */
-  _batch(docs) {
+  /** @param {TDoc[]} docs */
+  #batch(docs) {
     for (const doc of docs) {
-      /** @type {IndexedDocument | undefined} */
-      const existing = this.dbApi.getDoc(doc.id)
+      /** @type {IndexedDocument<TDoc> | undefined} */
+      const existing = this.#dbApi.getDoc(doc.id)
       // console.log('existing', existing)
       // console.log('doc', doc)
       let forksDirty = false
 
       for (const link of doc.links) {
-        this.dbApi.writeBacklink(link)
+        this.#dbApi.writeBacklink(link)
         if (existing && existing.forks.includes(link)) {
           forksDirty = true
           existing.forks = existing.forks.filter((fork) => fork !== link)
@@ -193,17 +213,17 @@ export default class SqliteIndexer {
       if (this.isLinked(doc.version)) {
         if (existing && forksDirty) {
           // console.log('updating forks', doc.id, existing.forks)
-          this.dbApi.updateForks(doc.id, existing.forks)
+          this.#dbApi.updateForks(doc.id, existing.forks)
         }
         continue
       }
 
       if (!existing) {
-        this.dbApi.writeDoc(doc)
+        this.#dbApi.writeDoc({ ...doc, forks: [] })
       } else if (this.isLinked(existing.version)) {
         // console.log('existing linked', existing.version)
         // The existing doc for this ID is now linked, so we can replace it
-        this.dbApi.writeDoc(doc)
+        this.#dbApi.writeDoc({ ...doc, forks: [] })
       } else {
         // console.log('is forked', doc, existing)
         // Document is forked, so we need to select a "winner"
@@ -213,10 +233,10 @@ export default class SqliteIndexer {
         // the forks end up being linked by a doc that is indexed later on?
         if (winner === existing) {
           existing.forks.push(doc.version)
-          this.dbApi.updateForks(existing.id, existing.forks)
+          this.#dbApi.updateForks(existing.id, existing.forks)
         } else {
           existing.forks.push(existing.version)
-          this.dbApi.writeDoc({ ...doc, forks: existing.forks })
+          this.#dbApi.writeDoc({ ...doc, forks: existing.forks })
         }
       }
     }
@@ -224,20 +244,15 @@ export default class SqliteIndexer {
 
   /** @param {string} version */
   isLinked(version) {
-    return !!this.dbApi.getBacklink(version)
+    return !!this.#dbApi.getBacklink(version)
   }
 
   /**
-   * @callback IndexCallback
-   * @param {IndexedDocument | IndexableDocument} doc
-   */
-
-  /**
    * @param {string} version
-   * @param {IndexCallback} listener
+   * @param {IndexCallback<TDoc>} listener
    */
   onceWriteDoc(version, listener) {
-    this.dbApi.onceWriteDoc(version, listener)
+    this.#dbApi.onceWriteDoc(version, listener)
   }
 }
 
@@ -245,7 +260,7 @@ export default class SqliteIndexer {
  *
  * @param {IndexableDocument} docA
  * @param {IndexableDocument} docB
- * @returns IndexedDocument
+ * @returns IndexableDocument
  */
 function defaultGetWinner(docA, docB) {
   if (
@@ -270,21 +285,21 @@ function defaultGetWinner(docA, docB) {
 function assertValidSchema(db, { docTableName, backlinkTableName }) {
   const docsTable = db.prepare(`PRAGMA table_list(${docTableName})`).get()
   assert(docsTable, `Table ${docTableName} does not exist`)
-  /** @type {ColumnInfo[]} */
-  const docsColumns = db.prepare(`PRAGMA table_info(${docTableName})`).all()
+  const docsColumns = /** @type {ColumnInfo[]} */ (
+    db.prepare(`PRAGMA table_info(${docTableName})`).all()
+  )
   assertMatchingSchema(docTableName, docsColumns, docSchema)
-  const backlinksTable = db
-    .prepare(`PRAGMA table_list(${backlinkTableName})`)
-    .get()
+  const backlinksTable = /** @type {{ ncol: number } | undefined }} */ (
+    db.prepare(`PRAGMA table_list(${backlinkTableName})`).get()
+  )
   assert(backlinksTable, `Table ${backlinkTableName} does not exist`)
   assert(
     backlinksTable.ncol === 1,
     `Backlinks table should have 1 column, but instead had ${backlinksTable.ncol}`
   )
-  /** @type {ColumnInfo[]} */
-  const backlinksColumns = db
-    .prepare(`PRAGMA table_info(${backlinkTableName})`)
-    .all()
+  const backlinksColumns = /** @type {ColumnInfo[]} */ (
+    db.prepare(`PRAGMA table_info(${backlinkTableName})`).all()
+  )
   assertMatchingSchema(backlinkTableName, backlinksColumns, backlinkSchema)
 }
 

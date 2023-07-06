@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.3](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2023-07-04)
+
+### Bug Fixes
+
+- add stricter types and include in npm pkg ([3212e94](https://github.com/digidem/mapeo-sqlite-indexer/commit/3212e947332db55d61aef3df1fe3df0f3ea75bdd))
+
 ## [1.0.0-alpha.2](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2022-11-01)
 
 ### ⚠ BREAKING CHANGES
