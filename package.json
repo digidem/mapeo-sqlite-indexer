@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.3",
   "description": "Index Mapeo data in a SQLite database",
   "main": "index.js",
-  "types": "dist/index.d.ts",
+  "types": "types/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "run-p lint type tape",
@@ -58,6 +58,9 @@
     ],
     "*.{js,css,md}": "prettier --write"
   },
+  "files": [
+    "types"
+  ],
   "directories": {
     "lib": "lib",
     "test": "test"
