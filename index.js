@@ -105,6 +105,7 @@ export class DbApi {
    */
   writeDoc(doc) {
     const flattenedDoc = {
+      ...this.#docDefaults,
       ...doc,
       links: JSON.stringify(doc.links),
       forks: JSON.stringify(doc.forks),
