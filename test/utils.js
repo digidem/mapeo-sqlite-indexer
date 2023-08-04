@@ -7,33 +7,33 @@ import { SqliteIndexer } from '../src/index.js'
 import Database from 'better-sqlite3'
 import { backlinkTable, docTable } from './schema.js'
 
-const sqlite = new Database('test.db')
-const db = drizzle(sqlite)
-
-export function dbPush() {
-  deleteAll()
-  execSync('npm run db:push')
-}
-
-export function deleteAll() {
-  db.delete(docTable).run()
-  db.delete(backlinkTable).run()
-}
-
-export function getDoc(docId) {
-  return db.select().from(docTable).where(eq(docTable.docId, docId)).get()
-}
-
 export function create() {
+  execSync('npm run db:push')
+
+  const sqlite = new Database('test.db')
+  const db = drizzle(sqlite, { logger: false })
+  sqlite.pragma(`journal_mode = WAL`)
+  deleteAll()
+
   const indexer = new SqliteIndexer(sqlite, {
     docTable,
     backlinkTable,
   })
-  return indexer
-}
 
-export function teardown() {
-  sqlite.close()
+  return { indexer, deleteAll, close, getDoc }
+
+  function deleteAll() {
+    db.delete(docTable).run()
+    db.delete(backlinkTable).run()
+  }
+
+  function close() {
+    sqlite.close()
+  }
+
+  function getDoc(docId) {
+    return db.select().from(docTable).where(eq(docTable.docId, docId)).get()
+  }
 }
 
 /**

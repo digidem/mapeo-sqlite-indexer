@@ -1,11 +1,6 @@
 // @ts-check
 import test from 'tape'
-import { create, dbPush, teardown, deleteAll, getDoc } from './utils.js'
-
-test('setup', (t) => {
-  dbPush()
-  t.end()
-})
+import { create } from './utils.js'
 
 test('If doc has updatedAt, it is used to select winner', async (t) => {
   const updated1 = new Date(1999, 0, 1).toISOString()
@@ -20,7 +15,7 @@ test('If doc has updatedAt, it is used to select winner', async (t) => {
     { docId: 'B', versionId: '3', links: ['1'], updatedAt: updated2 },
   ]
 
-  const indexer = create()
+  const { indexer, getDoc, close } = create()
 
   indexer.batch(docs)
 
@@ -54,7 +49,7 @@ test('If doc has updatedAt, it is used to select winner', async (t) => {
     t.deepEqual(doc, expected)
   }
 
-  deleteAll()
+  close()
 })
 
 test('If updatedAt is equal, version is used to select a deterministic winner', async (t) => {
@@ -65,7 +60,7 @@ test('If updatedAt is equal, version is used to select a deterministic winner', 
     { docId: 'A', versionId: '3', links: ['1'], updatedAt },
   ]
 
-  const indexer = create()
+  const { indexer, getDoc, deleteAll, close } = create()
 
   const expected = {
     docId: 'A',
@@ -82,9 +77,5 @@ test('If updatedAt is equal, version is used to select a deterministic winner', 
   t.deepEqual(doc, expected)
 
   deleteAll()
-})
-
-test('teardown', (t) => {
-  teardown()
-  t.end()
+  close()
 })

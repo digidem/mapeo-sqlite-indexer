@@ -1,6 +1,6 @@
 // @ts-check
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { eq } from 'drizzle-orm'
+import { eq, placeholder } from 'drizzle-orm'
 
 /**
  * @template T
@@ -27,19 +27,43 @@ export class SqliteIndexer {
   #db
   #docs
   #backlinks
+  #sql
 
   /**
-   * @param {import('better-sqlite3').Database} db better-sqlite3 database instance
+   * @param {import('better-sqlite3').Database} sqlite better-sqlite3 database instance
    * @param {object} options
    * @param {import('./types.js').DocTable} options.docTable - drizzle table for docs
    * @param {import('./types.js').BacklinkTable} options.backlinkTable - drizzle table for backlinks
    * @param {typeof defaultGetWinner} [options.getWinner] - Function that will be used to determine the "winning" fork of a document
    */
-  constructor(db, { docTable, backlinkTable, getWinner = defaultGetWinner }) {
-    this.#db = drizzle(db)
+  constructor(
+    sqlite,
+    { docTable, backlinkTable, getWinner = defaultGetWinner }
+  ) {
+    const db = (this.#db = drizzle(sqlite))
     this.#docs = docTable
     this.#backlinks = backlinkTable
     this.#getWinner = getWinner
+
+    // Prepared statements
+    this.#sql = {
+      getDoc: db
+        .select({
+          docId: docTable.docId,
+          versionId: docTable.versionId,
+          forks: docTable.forks,
+          links: docTable.links,
+          updatedAt: docTable.updatedAt,
+        })
+        .from(docTable)
+        .where(eq(docTable.docId, placeholder('docId')))
+        .prepare(),
+      writeBacklink: db
+        .insert(backlinkTable)
+        .values({ versionId: placeholder('link') })
+        .onConflictDoNothing()
+        .prepare(),
+    }
   }
 
   /** @param {Omit<TDoc, 'forks'>[]} docs */
@@ -48,84 +72,71 @@ export class SqliteIndexer {
     const typedDocs = /** @type {Omit<IndexedDoc, 'forks'>[]} */ (
       /** @type {unknown} */ (docs)
     )
-    const docsTable = this.#docs
-    this.#db.transaction((tx) => {
-      for (const doc of typedDocs) {
-        // console.log('processing doc', doc.docId, doc.versionId)
-        const existing = tx
-          .select({
-            docId: docsTable.docId,
-            versionId: docsTable.versionId,
-            forks: docsTable.forks,
-            links: docsTable.links,
-            updatedAt: docsTable.updatedAt,
-          })
-          .from(docsTable)
-          .where(eq(docsTable.docId, doc.docId))
-          .get()
+    const db = this.#db
+    const docTable = this.#docs
+    for (const doc of typedDocs) {
+      // console.log('processing doc', doc.docId, doc.versionId)
+      const existing = this.#sql.getDoc.get({ docId: doc.docId })
 
-        // console.log('existing', existing)
+      // console.log('existing', existing)
 
-        let forksDirty = false
+      let forksDirty = false
 
-        for (const link of doc.links) {
-          tx.insert(this.#backlinks)
-            .values({ versionId: link })
-            .onConflictDoNothing()
-            .run()
-          if (existing && existing.forks.includes(link)) {
-            forksDirty = true
-            existing.forks = existing.forks.filter((fork) => fork !== link)
-            // console.log('updated forks', existing.forks)
-          }
-        }
-
-        // If the doc is linked to by another doc, then it's not a head, so we can ignore it
-        if (this.#isLinked(doc.versionId)) {
-          // console.log('isLinked')
-          if (existing && forksDirty) {
-            // console.log('updating forks', doc.docId, existing.forks)
-            tx.update(docsTable)
-              .set({ forks: existing.forks })
-              .where(eq(docsTable.docId, existing.docId))
-              .run()
-          }
-          continue
-        }
-
-        if (!existing) {
-          // console.log('no existing', doc.docId)
-          tx.insert(docsTable).values(doc).run()
-        } else if (this.#isLinked(existing.versionId)) {
-          // console.log('existing linked', existing.versionId, existing.docId)
-          // The existing doc for this ID is now linked, so we can replace it
-          tx.update(docsTable)
-            .set({ ...doc, forks: [] })
-            .where(eq(docsTable.docId, doc.docId))
-            .run()
-        } else {
-          // console.log('is forked', doc, existing)
-          // Document is forked, so we need to select a "winner"
-          const winner = this.#getWinner(existing, doc)
-          // console.log('winner', winner)
-          // TODO: Can the forks Set get out of date over time? E.g. could some of
-          // the forks end up being linked by a doc that is indexed later on?
-          if (winner === existing) {
-            existing.forks.push(doc.versionId)
-            tx.update(docsTable)
-              .set({ forks: existing.forks })
-              .where(eq(docsTable.docId, existing.docId))
-              .run()
-          } else {
-            existing.forks.push(existing.versionId)
-            tx.update(docsTable)
-              .set({ ...doc, forks: existing.forks })
-              .where(eq(docsTable.docId, existing.docId))
-              .run()
-          }
+      for (const link of doc.links) {
+        this.#sql.writeBacklink.run({ link })
+        if (existing && existing.forks.includes(link)) {
+          forksDirty = true
+          existing.forks = existing.forks.filter((fork) => fork !== link)
+          // console.log('updated forks', existing.forks)
         }
       }
-    })
+
+      // If the doc is linked to by another doc, then it's not a head, so we can ignore it
+      if (this.#isLinked(doc.versionId)) {
+        // console.log('isLinked')
+        if (existing && forksDirty) {
+          // console.log('updating forks', doc.docId, existing.forks)
+          db.update(docTable)
+            .set({ forks: existing.forks })
+            .where(eq(docTable.docId, existing.docId))
+            .run()
+        }
+        continue
+      }
+
+      if (!existing) {
+        // console.log('no existing', doc)
+        db.insert(docTable).values(doc).run()
+        // console.log('written')
+      } else if (this.#isLinked(existing.versionId)) {
+        // console.log('existing linked', existing.versionId, existing.docId)
+        // The existing doc for this ID is now linked, so we can replace it
+        db.update(docTable)
+          .set({ ...doc, forks: [] })
+          .where(eq(docTable.docId, doc.docId))
+          .run()
+      } else {
+        // console.log('is forked', doc, existing)
+        // Document is forked, so we need to select a "winner"
+        const winner = this.#getWinner(existing, doc)
+        // console.log('winner', winner)
+        // TODO: Can the forks Set get out of date over time? E.g. could some of
+        // the forks end up being linked by a doc that is indexed later on?
+        if (winner === existing) {
+          existing.forks.push(doc.versionId)
+          db.update(docTable)
+            .set({ forks: existing.forks })
+            .where(eq(docTable.docId, existing.docId))
+            .run()
+        } else {
+          existing.forks.push(existing.versionId)
+          db.update(docTable)
+            .set({ ...doc, forks: existing.forks })
+            .where(eq(docTable.docId, existing.docId))
+            .run()
+        }
+      }
+    }
   }
 
   /** @param {string} versionId */

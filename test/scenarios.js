@@ -1,13 +1,6 @@
 // @ts-check
 import test from 'tape'
-import {
-  create,
-  permute,
-  getDoc,
-  deleteAll,
-  dbPush,
-  teardown,
-} from './utils.js'
+import { create, permute } from './utils.js'
 
 const docs = [
   { docId: 'A', versionId: '1', links: [], updatedAt: '' },
@@ -93,13 +86,8 @@ const scenarios = [
   },
 ]
 
-test('setup', (t) => {
-  dbPush()
-  t.end()
-})
-
 test('Expected head for all permutations of order', (t) => {
-  const indexer = create()
+  const { indexer, getDoc, deleteAll, close } = create()
 
   for (const scenario of scenarios) {
     const { docs, expected } = scenario
@@ -117,10 +105,6 @@ test('Expected head for all permutations of order', (t) => {
     }
   }
 
-  t.end()
-})
-
-test('teardown', (t) => {
-  teardown()
+  close()
   t.end()
 })
