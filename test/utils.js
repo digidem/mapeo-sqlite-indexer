@@ -13,10 +13,11 @@ export function create({ extraColumns = '' } = {}) {
   db.prepare(
     `CREATE TABLE IF NOT EXISTS docs
     (
-      id TEXT PRIMARY KEY NOT NULL,
-      version TEXT NOT NULL,
+      docId TEXT PRIMARY KEY NOT NULL,
+      versionId TEXT NOT NULL,
       links TEXT NOT NULL,
-      forks TEXT NOT NULL
+      forks TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
       ${extraColumns ? ', ' + extraColumns : ''}
     )
     WITHOUT ROWID`
@@ -24,7 +25,7 @@ export function create({ extraColumns = '' } = {}) {
 
   db.prepare(
     `CREATE TABLE IF NOT EXISTS backlinks
-    (version TEXT PRIMARY KEY NOT NULL)
+    (versionId TEXT PRIMARY KEY NOT NULL)
     WITHOUT ROWID`
   ).run()
 

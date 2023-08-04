@@ -3,14 +3,14 @@ import test from 'tape'
 import { create } from './utils.js'
 
 const docs = [
-  { id: 'A', seq: 1, version: '1', links: [] },
-  { id: 'A', seq: 2, version: '2', links: ['1'] },
-  { id: 'A', seq: 3, version: '3', links: ['1'] },
-  { id: 'A', seq: 4, version: '4', links: ['2', '3'] },
-  { id: 'A', seq: 5, version: '5', links: ['4'] },
-  { id: 'A', seq: 6, version: '6', links: ['4'] },
-  { id: 'A', seq: 7, version: '7', links: ['4'] },
-  { id: 'A', seq: 8, version: '8', links: ['5', '6'] },
+  { docId: 'A', seq: 1, versionId: '1', links: [], updatedAt: '' },
+  { docId: 'A', seq: 2, versionId: '2', links: ['1'], updatedAt: '' },
+  { docId: 'A', seq: 3, versionId: '3', links: ['1'], updatedAt: '' },
+  { docId: 'A', seq: 4, versionId: '4', links: ['2', '3'], updatedAt: '' },
+  { docId: 'A', seq: 5, versionId: '5', links: ['4'], updatedAt: '' },
+  { docId: 'A', seq: 6, versionId: '6', links: ['4'], updatedAt: '' },
+  { docId: 'A', seq: 7, versionId: '7', links: ['4'], updatedAt: '' },
+  { docId: 'A', seq: 8, versionId: '8', links: ['5', '6'], updatedAt: '' },
 ]
 
 test('onceWriteDoc called for each doc', async (t) => {
@@ -24,7 +24,7 @@ test('onceWriteDoc called for each doc', async (t) => {
 
   const { indexer, cleanup, clear } = create()
   for (const doc of docs) {
-    indexer.onceWriteDoc(doc.version, onWriteDoc)
+    indexer.onceWriteDoc(doc.versionId, onWriteDoc)
   }
   indexer.batch(docs)
   clear()

@@ -3,13 +3,16 @@ import test from 'tape'
 import { create } from './utils.js'
 
 test('If doc has timestamp, it is used to select winner', async (t) => {
+  const updated1 = new Date(1999, 0, 1).toISOString()
+  const updated2 = new Date(1999, 0, 2).toISOString()
+  const updated3 = new Date(1999, 0, 3).toISOString()
   const docs = [
-    { id: 'A', version: '1', links: [] },
-    { id: 'A', version: '2', links: ['1'], timestamp: Date.now() },
-    { id: 'A', version: '3', links: ['1'], timestamp: Date.now() - 1000 },
-    { id: 'B', version: '1', links: [] },
-    { id: 'B', version: '2', links: ['1'], timestamp: Date.now() - 1000 },
-    { id: 'B', version: '3', links: ['1'], timestamp: Date.now() },
+    { docId: 'A', versionId: '1', links: [], updatedAt: updated3 },
+    { docId: 'A', versionId: '2', links: ['1'], updatedAt: updated2 },
+    { docId: 'A', versionId: '3', links: ['1'], updatedAt: updated1 },
+    { docId: 'B', versionId: '1', links: [], updatedAt: updated3 },
+    { docId: 'B', versionId: '2', links: ['1'], updatedAt: updated1 },
+    { docId: 'B', versionId: '3', links: ['1'], updatedAt: updated2 },
   ]
 
   const { indexer, api, cleanup } = create({ extraColumns: 'timestamp NUMBER' })
@@ -18,31 +21,31 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
 
   {
     const expected = {
-      id: 'A',
-      version: '2',
+      docId: 'A',
+      versionId: '2',
       links: ['1'],
       forks: ['3'],
     }
 
-    const head = api.getDoc(expected.id)
+    const head = api.getDoc(expected.docId)
     // @ts-ignore
     // eslint-disable-next-line no-unused-vars
-    const { timestamp, ...doc } = head
+    const { updatedAt, ...doc } = head
     t.deepEqual(doc, expected)
   }
 
   {
     const expected = {
-      id: 'B',
-      version: '3',
+      docId: 'B',
+      versionId: '3',
       links: ['1'],
       forks: ['2'],
     }
 
-    const head = api.getDoc(expected.id)
+    const head = api.getDoc(expected.docId)
     // @ts-ignore
     // eslint-disable-next-line no-unused-vars
-    const { timestamp, ...doc } = head
+    const { updatedAt, ...doc } = head
     t.deepEqual(doc, expected)
   }
 
@@ -50,26 +53,27 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
 })
 
 test('If doc has no timestamp, version is used to select a deterministic winner', async (t) => {
+  const updatedAt = new Date().toISOString()
   const docs = [
-    { id: 'A', version: '1', links: [] },
-    { id: 'A', version: '2', links: ['1'] },
-    { id: 'A', version: '3', links: ['1'] },
+    { docId: 'A', versionId: '1', links: [], updatedAt },
+    { docId: 'A', versionId: '2', links: ['1'], updatedAt },
+    { docId: 'A', versionId: '3', links: ['1'], updatedAt },
   ]
 
   const { indexer, api, cleanup } = create()
 
   const expected = {
-    id: 'A',
-    version: '3',
+    docId: 'A',
+    versionId: '3',
     links: ['1'],
     forks: ['2'],
   }
 
   indexer.batch(docs)
-  const head = api.getDoc(expected.id)
+  const head = api.getDoc(expected.docId)
   // @ts-ignore
   // eslint-disable-next-line no-unused-vars
-  const { timestamp, ...doc } = head
+  const { updatedAt: _, ...doc } = head
   t.deepEqual(doc, expected)
 
   cleanup()
