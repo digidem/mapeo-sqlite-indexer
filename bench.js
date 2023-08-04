@@ -1,7 +1,8 @@
-import { create } from './test/utils.js'
+import { create, dbPush, teardown } from './test/utils.js'
 import { randomBytes } from 'crypto'
 
-const { indexer, cleanup } = create()
+dbPush()
+const indexer = create()
 
 const batchSize = Number(process.argv[2] || 100)
 let times = Number(process.argv[3] || 1000)
@@ -18,9 +19,10 @@ while (count < times) {
   var docs = new Array(batchSize)
   for (var i = 0; i < batchSize; i++) {
     docs[i] = {
-      version: String(count),
-      id: keys[Math.floor(Math.random() * keys.length)],
+      versionId: String(count),
+      docId: keys[Math.floor(Math.random() * keys.length)],
       links: count > 0 ? [String(count - 1)] : [],
+      updatedAt: '',
     }
     count++
   }
@@ -29,4 +31,4 @@ while (count < times) {
 
 var elapsed = Date.now() - start
 console.log(`${elapsed}ms`)
-cleanup()
+teardown()

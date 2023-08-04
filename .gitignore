@@ -116,3 +116,6 @@ dist
 
 # Type declarations
 /types
+
+# Test dbs
+*.db*

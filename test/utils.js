@@ -1,50 +1,39 @@
+// @ts-check
+import { execSync } from 'child_process'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { eq } from 'drizzle-orm'
+import { SqliteIndexer } from '../src/index.js'
+
 import Database from 'better-sqlite3'
-import tmp from 'tmp'
-import path from 'path'
-import SqliteIndexer, { DbApi } from '../index.js'
+import { backlinkTable, docTable } from './schema.js'
 
-export function create({ extraColumns = '' } = {}) {
-  const { name: tmpDir, removeCallback } = tmp.dirSync({ unsafeCleanup: true })
+const sqlite = new Database('test.db')
+const db = drizzle(sqlite)
 
-  const db = new Database(path.join(tmpDir, 'db.sqlite'))
+export function dbPush() {
+  deleteAll()
+  execSync('npm run db:push')
+}
 
-  db.pragma('journal_mode = WAL')
+export function deleteAll() {
+  db.delete(docTable).run()
+  db.delete(backlinkTable).run()
+}
 
-  db.prepare(
-    `CREATE TABLE IF NOT EXISTS docs
-    (
-      id TEXT PRIMARY KEY NOT NULL,
-      version TEXT NOT NULL,
-      links TEXT NOT NULL,
-      forks TEXT NOT NULL
-      ${extraColumns ? ', ' + extraColumns : ''}
-    )
-    WITHOUT ROWID`
-  ).run()
+export function getDoc(docId) {
+  return db.select().from(docTable).where(eq(docTable.docId, docId)).get()
+}
 
-  db.prepare(
-    `CREATE TABLE IF NOT EXISTS backlinks
-    (version TEXT PRIMARY KEY NOT NULL)
-    WITHOUT ROWID`
-  ).run()
-
-  const indexer = new SqliteIndexer(db, {
-    docTableName: 'docs',
-    backlinkTableName: 'backlinks',
+export function create() {
+  const indexer = new SqliteIndexer(sqlite, {
+    docTable,
+    backlinkTable,
   })
-  const api = new DbApi(db, {
-    docTableName: 'docs',
-    backlinkTableName: 'backlinks',
-  })
-  function cleanup() {
-    db.close()
-    removeCallback()
-  }
-  function clear() {
-    db.prepare(`DELETE FROM docs`).run()
-    db.prepare(`DELETE FROM backlinks`).run()
-  }
-  return { indexer, api, cleanup, clear }
+  return indexer
+}
+
+export function teardown() {
+  sqlite.close()
 }
 
 /**

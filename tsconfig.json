@@ -10,8 +10,9 @@
     "allowJs": true,
     "checkJs": false,
     "declaration": true,
+    "skipLibCheck": true,
     "emitDeclarationOnly": true,
     "declarationDir": "./types"
   },
-  "include": ["index.js"]
+  "include": ["src/index.js"]
 }
