@@ -106,11 +106,19 @@ export class DbApi {
    * @param {IndexedDocument<TDoc>} doc
    */
   writeDoc(doc) {
-    const flattenedDoc = {
-      ...this.#docDefaults,
-      ...doc,
-      links: JSON.stringify(doc.links),
-      forks: JSON.stringify(doc.forks),
+    /** @type {Record<string, string | number | null>} */
+    const flattenedDoc = {}
+    for (const { name, dflt_value } of this.#tableInfo) {
+      const value = /** @type {Record<string, any>} */ (doc)[name]
+      if (value === null || typeof value === 'undefined') {
+        flattenedDoc[name] = dflt_value
+      } else if (typeof value === 'boolean') {
+        flattenedDoc[name] = value ? 1 : 0
+      } else if (typeof value === 'object') {
+        flattenedDoc[name] = JSON.stringify(value)
+      } else {
+        flattenedDoc[name] = value
+      }
     }
     this.#writeDocSql.run(flattenedDoc)
 
