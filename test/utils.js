@@ -45,7 +45,7 @@ export function create({ extraColumns = '' } = {}) {
     db.prepare(`DELETE FROM docs`).run()
     db.prepare(`DELETE FROM backlinks`).run()
   }
-  return { indexer, api, cleanup, clear }
+  return { indexer, api, cleanup, clear, db }
 }
 
 /**
