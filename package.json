@@ -1,6 +1,6 @@
 {
   "name": "@mapeo/sqlite-indexer",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "Index Mapeo data in a SQLite database",
   "main": "index.js",
   "types": "types/index.d.ts",

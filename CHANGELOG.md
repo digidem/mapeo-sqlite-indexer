@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.5](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2023-08-07)
+
+### ⚠ BREAKING CHANGES
+
+- rename columns to match new schema (#11)
+
+### Features
+
+- complex docs (properties that are arrays or objects) ([#14](https://github.com/digidem/mapeo-sqlite-indexer/issues/14)) ([0d27840](https://github.com/digidem/mapeo-sqlite-indexer/commit/0d27840fd910897fea1269fb891cc4edf0443a3d))
+
+### Bug Fixes
+
+- rename columns to match new schema ([#11](https://github.com/digidem/mapeo-sqlite-indexer/issues/11)) ([a46beae](https://github.com/digidem/mapeo-sqlite-indexer/commit/a46beae2ae27f63edb0080f261d983b9df333b77))
+
 ## [1.0.0-alpha.4](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.2...v1.0.0-alpha.4) (2023-07-06)
 
 ### Bug Fixes
