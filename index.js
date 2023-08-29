@@ -272,7 +272,7 @@ export default class SqliteIndexer {
  * @param {U} docB
  * @returns T | U
  */
-function defaultGetWinner(docA, docB) {
+export function defaultGetWinner(docA, docB) {
   if (docA.updatedAt > docB.updatedAt) return docA
   if (docB.updatedAt > docA.updatedAt) return docB
   // They are equal or no timestamp property, so sort by version to ensure winner is deterministic
