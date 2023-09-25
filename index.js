@@ -7,7 +7,7 @@ import assert from 'assert'
  * @property {string} versionId
  * @property {string[]} links
  * @property {string} updatedAt
- * @property {true?} deleted
+ * @property {true} [deleted]
  */
 
 /** @typedef {{ type: string, pk: 1 | 0, cid: number, notnull: 1 | 0, dflt_value: any, name: string }} ColumnInfo */
