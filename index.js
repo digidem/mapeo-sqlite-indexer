@@ -72,7 +72,7 @@ export class DbApi {
     )
     const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
-      `SELECT docId, versionId, links, forks, updatedAt, deleted
+      `SELECT docId, versionId, links, forks, updatedAt
       FROM ${docTableName}
       WHERE docId = ?`
     )
@@ -317,14 +317,16 @@ function assertValidSchema(db, { docTableName, backlinkTableName }) {
 function assertMatchingSchema(tableName, columns, schema) {
   for (const [name, info] of Object.entries(schema)) {
     const column = columns.find((c) => c.name === name)
-    assert(column, `Table '${tableName}' must have a column '${name}'`)
-    for (const [prop, value] of Object.entries(info)) {
-      assert(
-        // @ts-ignore
-        column[prop] === value,
-        // @ts-ignore
-        `Column '${name}' in table '${tableName}' should have ${prop}=${value}, but instead ${prop}=${column[prop]}`
-      )
+    if (info.notnull) {
+      assert(column, `Table '${tableName}' must have a column '${name}'`)
+      for (const [prop, value] of Object.entries(info)) {
+        assert(
+          // @ts-ignore
+          column[prop] === value,
+          // @ts-ignore
+          `Column '${name}' in table '${tableName}' should have ${prop}=${value}, but instead ${prop}=${column[prop]}`
+        )
+      }
     }
   }
 }
