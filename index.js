@@ -7,7 +7,7 @@ import assert from 'assert'
  * @property {string} versionId
  * @property {string[]} links
  * @property {string} updatedAt
- * @property {true} [deleted]
+ * @property {Boolean} deleted
  */
 
 /** @typedef {{ type: string, pk: 1 | 0, cid: number, notnull: 1 | 0, dflt_value: any, name: string }} ColumnInfo */
@@ -29,7 +29,7 @@ const docSchema = {
   links: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
   forks: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
   updatedAt: { type: 'TEXT', notnull: 1, pk: 0 },
-  deleted: { type: 'INTEGER', notnull: 0, pk: 0 },
+  deleted: { type: 'INTEGER', notnull: 1, pk: 0 },
 }
 
 /** @type {ColumnSchema} */
@@ -72,7 +72,7 @@ export class DbApi {
     )
     const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
-      `SELECT docId, versionId, links, forks, updatedAt
+      `SELECT docId, versionId, links, forks, updatedAt, deleted
       FROM ${docTableName}
       WHERE docId = ?`
     )
@@ -317,16 +317,14 @@ function assertValidSchema(db, { docTableName, backlinkTableName }) {
 function assertMatchingSchema(tableName, columns, schema) {
   for (const [name, info] of Object.entries(schema)) {
     const column = columns.find((c) => c.name === name)
-    if (info.notnull) {
-      assert(column, `Table '${tableName}' must have a column '${name}'`)
-      for (const [prop, value] of Object.entries(info)) {
-        assert(
-          // @ts-ignore
-          column[prop] === value,
-          // @ts-ignore
-          `Column '${name}' in table '${tableName}' should have ${prop}=${value}, but instead ${prop}=${column[prop]}`
-        )
-      }
+    assert(column, `Table '${tableName}' must have a column '${name}'`)
+    for (const [prop, value] of Object.entries(info)) {
+      assert(
+        // @ts-ignore
+        column[prop] === value,
+        // @ts-ignore
+        `Column '${name}' in table '${tableName}' should have ${prop}=${value}, but instead ${prop}=${column[prop]}`
+      )
     }
   }
 }
