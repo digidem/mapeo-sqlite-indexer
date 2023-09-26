@@ -13,6 +13,7 @@ test('booleans, arrays and objects are transformed', async (t) => {
       boolean: true,
       array: [],
       object: {},
+      deleted: false,
     },
     {
       docId: 'B',
@@ -22,8 +23,17 @@ test('booleans, arrays and objects are transformed', async (t) => {
       boolean: false,
       array: ['foo'],
       object: { foo: 'bar' },
+      deleted: false,
     },
-    { docId: 'C', versionId: '1', links: [], updatedAt, array: [], object: {} },
+    {
+      docId: 'C',
+      versionId: '1',
+      links: [],
+      updatedAt,
+      array: [],
+      object: {},
+      deleted: false,
+    },
   ]
 
   const extraColumns = `
@@ -45,6 +55,7 @@ object TEXT NOT NULL`
       boolean: 1,
       array: '[]',
       object: '{}',
+      deleted: 0,
     },
     {
       docId: 'B',
@@ -55,6 +66,7 @@ object TEXT NOT NULL`
       boolean: 0,
       array: '["foo"]',
       object: '{"foo":"bar"}',
+      deleted: 0,
     },
     {
       docId: 'C',
@@ -65,6 +77,7 @@ object TEXT NOT NULL`
       boolean: 0,
       array: '[]',
       object: '{}',
+      deleted: 0,
     },
   ]
 

@@ -7,12 +7,48 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
   const updated2 = new Date(1999, 0, 2).toISOString()
   const updated3 = new Date(1999, 0, 3).toISOString()
   const docs = [
-    { docId: 'A', versionId: '1', links: [], updatedAt: updated3 },
-    { docId: 'A', versionId: '2', links: ['1'], updatedAt: updated2 },
-    { docId: 'A', versionId: '3', links: ['1'], updatedAt: updated1 },
-    { docId: 'B', versionId: '1', links: [], updatedAt: updated3 },
-    { docId: 'B', versionId: '2', links: ['1'], updatedAt: updated1 },
-    { docId: 'B', versionId: '3', links: ['1'], updatedAt: updated2 },
+    {
+      docId: 'A',
+      versionId: '1',
+      links: [],
+      updatedAt: updated3,
+      deleted: false,
+    },
+    {
+      docId: 'A',
+      versionId: '2',
+      links: ['1'],
+      updatedAt: updated2,
+      deleted: false,
+    },
+    {
+      docId: 'A',
+      versionId: '3',
+      links: ['1'],
+      updatedAt: updated1,
+      deleted: false,
+    },
+    {
+      docId: 'B',
+      versionId: '1',
+      links: [],
+      updatedAt: updated3,
+      deleted: false,
+    },
+    {
+      docId: 'B',
+      versionId: '2',
+      links: ['1'],
+      updatedAt: updated1,
+      deleted: false,
+    },
+    {
+      docId: 'B',
+      versionId: '3',
+      links: ['1'],
+      updatedAt: updated2,
+      deleted: false,
+    },
   ]
 
   const { indexer, api, cleanup } = create({ extraColumns: 'timestamp NUMBER' })
@@ -25,6 +61,7 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
       versionId: '2',
       links: ['1'],
       forks: ['3'],
+      deleted: 0,
     }
 
     const head = api.getDoc(expected.docId)
@@ -40,6 +77,7 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
       versionId: '3',
       links: ['1'],
       forks: ['2'],
+      deleted: 0,
     }
 
     const head = api.getDoc(expected.docId)
@@ -55,9 +93,9 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
 test('If doc has no timestamp, version is used to select a deterministic winner', async (t) => {
   const updatedAt = new Date().toISOString()
   const docs = [
-    { docId: 'A', versionId: '1', links: [], updatedAt },
-    { docId: 'A', versionId: '2', links: ['1'], updatedAt },
-    { docId: 'A', versionId: '3', links: ['1'], updatedAt },
+    { docId: 'A', versionId: '1', links: [], updatedAt, deleted: false },
+    { docId: 'A', versionId: '2', links: ['1'], updatedAt, deleted: false },
+    { docId: 'A', versionId: '3', links: ['1'], updatedAt, deleted: false },
   ]
 
   const { indexer, api, cleanup } = create()
@@ -67,6 +105,7 @@ test('If doc has no timestamp, version is used to select a deterministic winner'
     versionId: '3',
     links: ['1'],
     forks: ['2'],
+    deleted: 0,
   }
 
   indexer.batch(docs)
