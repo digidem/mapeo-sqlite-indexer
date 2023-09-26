@@ -15,13 +15,13 @@ const docs = [
   },
   { docId: 'A', versionId: '5', links: ['4'], updatedAt: '', deleted: false },
   { docId: 'A', versionId: '6', links: ['4'], updatedAt: '', deleted: false },
-  { docId: 'A', versionId: '7', links: ['4'], updatedAt: '', deleted: false },
+  { docId: 'A', versionId: '7', links: ['4'], updatedAt: '', deleted: true },
   {
     docId: 'A',
     versionId: '8',
     links: ['5', '6'],
     updatedAt: '',
-    deleted: false,
+    deleted: true,
   },
 ]
 
@@ -89,7 +89,7 @@ const scenarios = [
       links: ['4'],
       forks: ['5', '6'],
       updatedAt: '',
-      deleted: 0,
+      deleted: 1,
     },
   },
   {
@@ -100,7 +100,7 @@ const scenarios = [
       links: ['5', '6'],
       forks: ['7'],
       updatedAt: '',
-      deleted: 0,
+      deleted: 1,
     },
   },
 ]
