@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.7](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2023-10-02)
+
+### Features
+
+- add deleted to table Doc ([#18](https://github.com/digidem/mapeo-sqlite-indexer/issues/18)) ([e617aa0](https://github.com/digidem/mapeo-sqlite-indexer/commit/e617aa0cf397c2cea9f281653fb7a2234a83ae37))
+
 ## [1.0.0-alpha.6](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2023-08-30)
 
 ## [1.0.0-alpha.5](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2023-08-07)
