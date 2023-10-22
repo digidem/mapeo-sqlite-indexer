@@ -49,9 +49,6 @@ export class DbApi {
   #docDefaults
   #tableInfo
 
-  /** @type {Map<string, Set<IndexCallback<TDoc>>>} */
-  #listeners = new Map()
-
   /**
    * @param {import('better-sqlite3').Database} db
    * @param {object} options
@@ -123,36 +120,6 @@ export class DbApi {
       }
     }
     this.#writeDocSql.run(flattenedDoc)
-
-    const { versionId } = doc
-    if (this.#listeners.has(versionId)) {
-      process.nextTick(() => {
-        const set = this.#listeners.get(versionId)
-        if (set) {
-          for (const listener of set.values()) {
-            listener(doc)
-          }
-          this.#listeners.delete(versionId)
-        }
-      })
-    }
-  }
-  /**
-   * @param {string} versionId
-   * @param {IndexCallback<TDoc>} listener
-   */
-  onceWriteDoc(versionId, listener) {
-    if (!this.#listeners.has(versionId)) {
-      this.#listeners.set(versionId, new Set())
-    }
-
-    const set = this.#listeners.get(versionId)
-    if (set && set.has(listener)) {
-      return
-    } else if (set) {
-      set.add(listener)
-      this.#listeners.set(versionId, set)
-    }
   }
   /**
    * @param {string} docId
@@ -256,14 +223,6 @@ export default class SqliteIndexer {
   /** @param {string} versionId */
   isLinked(versionId) {
     return !!this.#dbApi.getBacklink(versionId)
-  }
-
-  /**
-   * @param {string} versionId
-   * @param {IndexCallback<TDoc>} listener
-   */
-  onceWriteDoc(versionId, listener) {
-    this.#dbApi.onceWriteDoc(versionId, listener)
   }
 }
 
