@@ -17,8 +17,7 @@ export function create({ extraColumns = '' } = {}) {
       versionId TEXT NOT NULL,
       links TEXT NOT NULL,
       forks TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
-      deleted INTEGER NOT NULL
+      updatedAt TEXT NOT NULL
       ${extraColumns ? ', ' + extraColumns : ''}
     )
     WITHOUT ROWID`
