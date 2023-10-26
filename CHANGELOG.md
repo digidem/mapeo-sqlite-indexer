@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.8](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2023-10-26)
+
+### ⚠ BREAKING CHANGES
+
+- remove onceWriteDoc() (#21)
+
+### Features
+
+- revert adding of delete field to schema ([#20](https://github.com/digidem/mapeo-sqlite-indexer/issues/20)) ([a262d67](https://github.com/digidem/mapeo-sqlite-indexer/commit/a262d676ad47967bbda71aeaacefd84f7327cf71)), closes [#19](https://github.com/digidem/mapeo-sqlite-indexer/issues/19)
+
+- remove onceWriteDoc() ([#21](https://github.com/digidem/mapeo-sqlite-indexer/issues/21)) ([8caaf6a](https://github.com/digidem/mapeo-sqlite-indexer/commit/8caaf6a9becf191aca8b9072a53b7671245496c7)), closes [#15](https://github.com/digidem/mapeo-sqlite-indexer/issues/15)
+
 ## [1.0.0-alpha.7](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2023-10-02)
 
 ### Features
