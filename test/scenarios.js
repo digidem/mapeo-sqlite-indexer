@@ -3,26 +3,14 @@ import test from 'tape'
 import { create, permute } from './utils.js'
 
 const docs = [
-  { docId: 'A', versionId: '1', links: [], updatedAt: '', deleted: false },
-  { docId: 'A', versionId: '2', links: ['1'], updatedAt: '', deleted: false },
-  { docId: 'A', versionId: '3', links: ['1'], updatedAt: '', deleted: false },
-  {
-    docId: 'A',
-    versionId: '4',
-    links: ['2', '3'],
-    updatedAt: '',
-    deleted: false,
-  },
-  { docId: 'A', versionId: '5', links: ['4'], updatedAt: '', deleted: false },
-  { docId: 'A', versionId: '6', links: ['4'], updatedAt: '', deleted: false },
-  { docId: 'A', versionId: '7', links: ['4'], updatedAt: '', deleted: true },
-  {
-    docId: 'A',
-    versionId: '8',
-    links: ['5', '6'],
-    updatedAt: '',
-    deleted: true,
-  },
+  { docId: 'A', versionId: '1', links: [], updatedAt: '' },
+  { docId: 'A', versionId: '2', links: ['1'], updatedAt: '' },
+  { docId: 'A', versionId: '3', links: ['1'], updatedAt: '' },
+  { docId: 'A', versionId: '4', links: ['2', '3'], updatedAt: '' },
+  { docId: 'A', versionId: '5', links: ['4'], updatedAt: '' },
+  { docId: 'A', versionId: '6', links: ['4'], updatedAt: '' },
+  { docId: 'A', versionId: '7', links: ['4'], updatedAt: '' },
+  { docId: 'A', versionId: '8', links: ['5', '6'], updatedAt: '' },
 ]
 
 const scenarios = [
@@ -34,7 +22,6 @@ const scenarios = [
       links: ['1'],
       forks: [],
       updatedAt: '',
-      deleted: 0,
     },
   },
   {
@@ -45,7 +32,6 @@ const scenarios = [
       links: ['1'],
       forks: ['2'],
       updatedAt: '',
-      deleted: 0,
     },
   },
   {
@@ -56,7 +42,6 @@ const scenarios = [
       links: ['2', '3'],
       forks: [],
       updatedAt: '',
-      deleted: 0,
     },
   },
   {
@@ -67,7 +52,6 @@ const scenarios = [
       links: ['4'],
       forks: [],
       updatedAt: '',
-      deleted: 0,
     },
   },
   {
@@ -78,7 +62,6 @@ const scenarios = [
       links: ['4'],
       forks: ['5'],
       updatedAt: '',
-      deleted: 0,
     },
   },
   {
@@ -89,7 +72,6 @@ const scenarios = [
       links: ['4'],
       forks: ['5', '6'],
       updatedAt: '',
-      deleted: 1,
     },
   },
   {
@@ -100,7 +82,6 @@ const scenarios = [
       links: ['5', '6'],
       forks: ['7'],
       updatedAt: '',
-      deleted: 1,
     },
   },
 ]

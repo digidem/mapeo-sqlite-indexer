@@ -7,7 +7,6 @@ import assert from 'assert'
  * @property {string} versionId
  * @property {string[]} links
  * @property {string} updatedAt
- * @property {Boolean} deleted
  */
 
 /** @typedef {{ type: string, pk: 1 | 0, cid: number, notnull: 1 | 0, dflt_value: any, name: string }} ColumnInfo */
@@ -29,7 +28,6 @@ const docSchema = {
   links: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
   forks: { type: 'TEXT', notnull: 1, dflt_value: null, pk: 0 },
   updatedAt: { type: 'TEXT', notnull: 1, pk: 0 },
-  deleted: { type: 'INTEGER', notnull: 1, pk: 0 },
 }
 
 /** @type {ColumnSchema} */
@@ -69,7 +67,7 @@ export class DbApi {
     )
     const docColumns = tableInfo.map(({ name }) => name)
     this.#getDocSql = db.prepare(
-      `SELECT docId, versionId, links, forks, updatedAt, deleted
+      `SELECT docId, versionId, links, forks, updatedAt
       FROM ${docTableName}
       WHERE docId = ?`
     )
