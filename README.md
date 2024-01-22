@@ -145,6 +145,10 @@ Index an array of documents. Documents can be in any order. Documents must have 
 
 Set a listener for a doc at a specific version. Useful for performing an action based on completion of indexing of a document.
 
+### indexer.deleteAll()
+
+Delete all documents and backlinks. Useful if you want to reset the index.
+
 ### docs
 
 _Requires_\
