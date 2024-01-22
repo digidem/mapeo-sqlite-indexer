@@ -44,6 +44,7 @@ export class DbApi {
   #getBacklinkSql
   #writeBacklinkSql
   #updateForksSql
+  #deleteAll
   #docDefaults
   #tableInfo
 
@@ -87,6 +88,13 @@ export class DbApi {
       `INSERT OR IGNORE INTO ${backlinkTableName} (versionId)
       VALUES (?)`
     )
+
+    const deleteDocsSql = db.prepare(`DELETE FROM ${docTableName}`)
+    const deleteBacklinksSql = db.prepare(`DELETE FROM ${backlinkTableName}`)
+    this.#deleteAll = db.transaction(() => {
+      deleteDocsSql.run()
+      deleteBacklinksSql.run()
+    })
   }
   /**
    * @param {string} docId
@@ -140,6 +148,12 @@ export class DbApi {
    */
   writeBacklink(versionId) {
     this.#writeBacklinkSql.run(versionId)
+  }
+  /**
+   * @returns {void}
+   */
+  deleteAll() {
+    this.#deleteAll()
   }
 }
 
@@ -221,6 +235,10 @@ export default class SqliteIndexer {
   /** @param {string} versionId */
   isLinked(versionId) {
     return !!this.#dbApi.getBacklink(versionId)
+  }
+
+  deleteAll() {
+    this.#dbApi.deleteAll()
   }
 }
 
