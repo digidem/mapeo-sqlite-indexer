@@ -18,8 +18,8 @@
   "author": "Digital Democracy",
   "license": "MIT",
   "engines": {
-    "node": ">=16.17.1",
-    "npm": ">=8.15.0"
+    "node": ">=18.17.1",
+    "npm": ">=9.6.7"
   },
   "dependencies": {
     "@types/better-sqlite3": "^7.6.4",
