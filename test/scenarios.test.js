@@ -1,5 +1,6 @@
 // @ts-check
-import test from 'tape'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { create, permute } from './utils.js'
 
 const docs = [
@@ -88,6 +89,7 @@ const scenarios = [
 
 test('Expected head for all permutations of order', async (t) => {
   const { indexer, api, cleanup, clear } = create()
+  t.after(cleanup)
 
   for (const scenario of scenarios) {
     const { docs, expected } = scenario
@@ -96,7 +98,7 @@ test('Expected head for all permutations of order', async (t) => {
     for (const permutation of permute(docs)) {
       indexer.batch(permutation)
       const head = api.getDoc(expected.docId)
-      t.deepEqual(
+      assert.deepEqual(
         { ...head, forks: head?.forks.sort() },
         expected,
         JSON.stringify(permutation.map((doc) => doc.versionId))
@@ -104,5 +106,4 @@ test('Expected head for all permutations of order', async (t) => {
       clear()
     }
   }
-  cleanup()
 })

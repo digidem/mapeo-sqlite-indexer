@@ -1,5 +1,6 @@
 // @ts-check
-import test from 'tape'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { create } from './utils.js'
 
 test('If doc has timestamp, it is used to select winner', async (t) => {
@@ -16,6 +17,7 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
   ]
 
   const { indexer, api, cleanup } = create({ extraColumns: 'timestamp NUMBER' })
+  t.after(cleanup)
 
   indexer.batch(docs)
 
@@ -31,7 +33,7 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
     // @ts-ignore
     // eslint-disable-next-line no-unused-vars
     const { updatedAt, ...doc } = head
-    t.deepEqual(doc, expected)
+    assert.deepEqual(doc, expected)
   }
 
   {
@@ -46,10 +48,8 @@ test('If doc has timestamp, it is used to select winner', async (t) => {
     // @ts-ignore
     // eslint-disable-next-line no-unused-vars
     const { updatedAt, ...doc } = head
-    t.deepEqual(doc, expected)
+    assert.deepEqual(doc, expected)
   }
-
-  cleanup()
 })
 
 test('If doc has no timestamp, version is used to select a deterministic winner', async (t) => {
@@ -61,6 +61,7 @@ test('If doc has no timestamp, version is used to select a deterministic winner'
   ]
 
   const { indexer, api, cleanup } = create()
+  t.after(cleanup)
 
   const expected = {
     docId: 'A',
@@ -74,7 +75,5 @@ test('If doc has no timestamp, version is used to select a deterministic winner'
   // @ts-ignore
   // eslint-disable-next-line no-unused-vars
   const { updatedAt: _, ...doc } = head
-  t.deepEqual(doc, expected)
-
-  cleanup()
+  assert.deepEqual(doc, expected)
 })

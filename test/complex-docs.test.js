@@ -1,5 +1,6 @@
 // @ts-check
-import test from 'tape'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { create } from './utils.js'
 
 test('booleans, arrays and objects are transformed', async (t) => {
@@ -32,6 +33,7 @@ array TEXT NOT NULL,
 object TEXT NOT NULL`
 
   const { indexer, db, cleanup } = create({ extraColumns })
+  t.after(cleanup)
 
   indexer.batch(docs)
 
@@ -68,7 +70,5 @@ object TEXT NOT NULL`
     },
   ]
 
-  t.deepEqual(db.prepare('SELECT * FROM docs').all(), expected)
-
-  cleanup()
+  assert.deepEqual(db.prepare('SELECT * FROM docs').all(), expected)
 })
