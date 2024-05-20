@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.9](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2024-05-20)
+
+### ⚠ BREAKING CHANGES
+
+- drop Node 16 support (#26)
+- Node 16.17.1+ is now required.
+
+### Features
+
+- add method to clear index ([#24](https://github.com/digidem/mapeo-sqlite-indexer/issues/24)) ([6b34678](https://github.com/digidem/mapeo-sqlite-indexer/commit/6b346788bc50fe39d4c040fdb2ab11417a1c6253)), closes [#22](https://github.com/digidem/mapeo-sqlite-indexer/issues/22)
+
+### Bug Fixes
+
+- don't document onceWriteDoc ([#25](https://github.com/digidem/mapeo-sqlite-indexer/issues/25)) ([36c3333](https://github.com/digidem/mapeo-sqlite-indexer/commit/36c33338b129343731bc881359fa2368957ab027)), closes [#21](https://github.com/digidem/mapeo-sqlite-indexer/issues/21)
+
+- develop on Node 20, CI with 16.17.1 + 18.17.1 + 20 ([#23](https://github.com/digidem/mapeo-sqlite-indexer/issues/23)) ([c39ed31](https://github.com/digidem/mapeo-sqlite-indexer/commit/c39ed31409e1cf33a6662caf07455b0a1828c469)), closes [digidem/multi-core-indexer#35](https://github.com/digidem/multi-core-indexer/issues/35)
+- drop Node 16 support ([#26](https://github.com/digidem/mapeo-sqlite-indexer/issues/26)) ([55ad994](https://github.com/digidem/mapeo-sqlite-indexer/commit/55ad9944fac0ae0effdf4ee87581f468e83b95e6))
+
 ## [1.0.0-alpha.8](https://github.com/digidem/mapeo-sqlite-indexer/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2023-10-26)
 
 ### ⚠ BREAKING CHANGES
