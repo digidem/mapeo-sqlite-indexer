@@ -21,13 +21,14 @@
     "node": ">=18.17.1",
     "npm": ">=9.6.7"
   },
-  "dependencies": {
-    "@types/better-sqlite3": "^7.6.4",
-    "better-sqlite3": "^8.4.0"
+  "peerDependencies": {
+    "better-sqlite3": "*"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
     "@types/node": "^18.16.19",
     "@types/tmp": "^0.2.3",
+    "better-sqlite3": "^11.0.0",
     "borp": "^0.10.0",
     "c8": "^8.0.0",
     "eslint": "^8.44.0",
