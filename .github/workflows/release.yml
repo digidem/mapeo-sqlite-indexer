@@ -29,7 +29,7 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: gmaclennan/optic-release-automation-action@567cca6b97745b9a698e7df33e0bb30276fd2fbb # v4.12.0 + https://github.com/nearform-actions/optic-release-automation-action/pull/588
+      - uses: gmaclennan/optic-release-automation-action@a2785548e8bdafab7e628c2317b604278e460434 # v4.12.2
         with:
           commit-message: 'chore: Release {version}'
           sync-semver-tags: false
