@@ -14,13 +14,16 @@ for (let i = 0; i < 5000; i++) {
 const start = Date.now()
 let count = 0
 
+const nowISO = new Date().toISOString()
+
 while (count < times) {
   var docs = new Array(batchSize)
   for (var i = 0; i < batchSize; i++) {
     docs[i] = {
-      version: String(count),
-      id: keys[Math.floor(Math.random() * keys.length)],
+      versionId: String(count),
+      docId: keys[Math.floor(Math.random() * keys.length)],
       links: count > 0 ? [String(count - 1)] : [],
+      updatedAt: nowISO,
     }
     count++
   }
